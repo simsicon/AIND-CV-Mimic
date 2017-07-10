@@ -75,6 +75,7 @@ function onReset() {
 
   // TODO(optional): You can restart the game as well
   // <your code here>
+  restartGame()
 };
 
 // Add a callback to notify when camera access is allowed
@@ -103,6 +104,7 @@ detector.addEventListener("onInitializeSuccess", function() {
 
   // TODO(optional): Call a function to initialize the game, if needed
   // <your code here>
+  startGame()
 });
 
 // Add a callback to receive the results from processing an image
@@ -134,6 +136,7 @@ detector.addEventListener("onImageResultsSuccess", function(faces, image, timest
 
     // TODO: Call your function to run the game (define it first!)
     // <your code here>
+    detectGame(faces[0].emojis.dominantEmoji)
   }
 });
 
@@ -148,7 +151,7 @@ function drawFeaturePoints(canvas, img, face) {
   // TODO: Set the stroke and/or fill style you want for each feature point marker
   // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D#Fill_and_stroke_styles
   // <your code here>
-  
+
   // Loop over each feature point in the face
   for (var id in face.featurePoints) {
     var featurePoint = face.featurePoints[id];
@@ -156,6 +159,10 @@ function drawFeaturePoints(canvas, img, face) {
     // TODO: Draw feature point, e.g. as a circle using ctx.arc()
     // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/arc
     // <your code here>
+    ctx.beginPath();
+    ctx.strokeStyle = "#EEEEEE"
+    ctx.arc(featurePoint.x, featurePoint.y, 3, 0, 2 * Math.PI, true);
+    ctx.stroke()
   }
 }
 
@@ -166,11 +173,25 @@ function drawEmoji(canvas, img, face) {
 
   // TODO: Set the font and style you want for the emoji
   // <your code here>
-  
+
   // TODO: Draw it using ctx.strokeText() or fillText()
   // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
   // TIP: Pick a particular feature point as an anchor so that the emoji sticks to your face
   // <your code here>
+  points = Object.values(face.featurePoints)
+  emoji_x = Number.NEGATIVE_INFINITY
+  emoji_y = Number.POSITIVE_INFINITY
+  for (var i = 0 ; i < points.length - 1 ; i ++) {
+    if (emoji_x < points[i].x) {
+      emoji_x = points[i].x
+    }
+
+    if (emoji_y > points[i].y) {
+      emoji_y = points[i].y
+    }
+  }
+  ctx.font = "36px Georgia"
+  ctx.fillText(face.emojis.dominantEmoji, emoji_x, emoji_y)
 }
 
 // TODO: Define any variables and functions to implement the Mimic Me! game mechanics
@@ -182,8 +203,43 @@ function drawEmoji(canvas, img, face) {
 // - Unicode values for all emojis recognized by Affectiva are provided above in the list 'emojis'
 // - To check for a match, you can convert the dominant emoji to unicode using the toUnicode() function
 
+function startGame() {
+  window.total = 0
+  window.correct = 0
+  newGame()
+}
+
+function newGame() {
+  newRound()
+  window.interval_id = setInterval(newRound, 10000)
+}
+
+function newRound() {
+  window.total = window.total + 1
+  window.target_emoji = emojis[Math.floor(Math.random() * emojis.length)]
+  setTargetEmoji(window.target_emoji)
+  setScore(window.correct, window.total)
+}
+
+function detectGame(detected_emoji) {
+  emoji_code = toUnicode(detected_emoji)
+
+  if (emoji_code == window.target_emoji) {
+    window.correct = window.correct + 1
+    newRound()
+  }
+}
+
 // Optional:
 // - Define an initialization/reset function, and call it from the "onInitializeSuccess" event handler above
 // - Define a game reset function (same as init?), and call it from the onReset() function above
 
 // <your code here>
+function restartGame() {
+  clearInterval(window.interval_id)
+  window.total = 0
+  window.correct = 0
+  setScore(window.correct, window.total)
+  $("#target").html("?")
+  newGame()
+}
